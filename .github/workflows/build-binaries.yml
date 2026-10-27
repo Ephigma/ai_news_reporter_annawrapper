@@ -23,14 +23,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { platform: darwin-arm64, os: macos-14, arch: arm64 }
-          # Intel macOS runners are being retired; x64 Python under Rosetta 2 on an
-          # Apple Silicon runner produces an x86_64 binary (same as Anna's examples).
-          - { platform: darwin-x86_64, os: macos-15, arch: x64 }
+          - { platform: darwin-arm64, os: macos-14, arch: arm64, python: "uv run --project executas/ai-news-reporter python" }
+          # Intel macOS runners are being retired, so x86_64 is built on Apple Silicon.
+          # setup-python's "x64" Python there is a universal2 framework build that runs
+          # natively as arm64; `arch -x86_64` forces its x86_64 slice under Rosetta 2.
+          - { platform: darwin-x86_64, os: macos-15, arch: x64, python: "arch -x86_64 executas/ai-news-reporter/.venv/bin/python" }
           # The oldest available Ubuntu: a PyInstaller binary needs a glibc at least
           # as new as the build host's, and the Cloud Agent's glibc is not published.
-          - { platform: linux-x86_64, os: ubuntu-22.04, arch: x64 }
-          - { platform: windows-x86_64, os: windows-latest, arch: x64 }
+          - { platform: linux-x86_64, os: ubuntu-22.04, arch: x64, python: "uv run --project executas/ai-news-reporter python" }
+          - { platform: windows-x86_64, os: windows-latest, arch: x64, python: "uv run --project executas/ai-news-reporter python" }
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -46,17 +47,27 @@ jobs:
 
       - uses: astral-sh/setup-uv@v6
 
+      - name: Sync build environment
+        env:
+          UV_PYTHON: ${{ steps.py.outputs.python-path }}
+        run: uv sync --project executas/ai-news-reporter
+
       - name: Tests
         env:
           UV_PYTHON: ${{ steps.py.outputs.python-path }}
+          PY: ${{ matrix.python }}
         run: |
-          uv run --project executas/ai-news-reporter python tests/test_config.py
-          uv run --project executas/ai-news-reporter python tests/test_plugin.py
+          $PY tests/test_config.py
+          $PY tests/test_plugin.py
 
+      # --platform makes the build refuse to run, and the binary's CPU type is checked,
+      # if the interpreter would produce a different platform than this job is for.
       - name: Build, package and smoke-test
         env:
           UV_PYTHON: ${{ steps.py.outputs.python-path }}
-        run: uv run --project executas/ai-news-reporter python scripts/build_binary.py
+          PY: ${{ matrix.python }}
+          PLATFORM: ${{ matrix.platform }}
+        run: $PY scripts/build_binary.py --platform "$PLATFORM"
 
       - uses: actions/upload-artifact@v4
         with:

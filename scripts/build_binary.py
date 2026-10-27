@@ -7,7 +7,7 @@ uploads. The smoke test runs the binary extracted from the archive, not the
 source file, because that is what the Cloud Agent installs.
 
 Usage (from the repo root):
-  uv run --project executas/ai-news-reporter python scripts/build_binary.py
+  uv run --project executas/ai-news-reporter python scripts/build_binary.py [--platform linux-x86_64]
   uv run --project executas/ai-news-reporter python scripts/build_binary.py --write-manifest
 """
 
@@ -54,11 +54,34 @@ def write_manifest() -> None:
     print(f"wrote {PROTOCOL_MANIFEST.relative_to(ROOT)}")
 
 
+# Executable header -> CPU type, keyed by platform. A universal2 macOS Python runs as
+# arm64 even when invoked through an "x64" path, so the binary itself is checked.
+MACHO_CPU = {"darwin-arm64": 0x0100000C, "darwin-x86_64": 0x01000007}
+ELF_MACHINE = {"linux-x86_64": 0x3E}
+PE_MACHINE = {"windows-x86_64": 0x8664}
+
+
 def host_platform() -> str:
     key = PLATFORM_KEYS.get((platform.system(), platform.machine()))
     if key is None:
         sys.exit(f"unsupported build host: {platform.system()} {platform.machine()}")
     return key
+
+
+def check_binary_arch(binary: Path, platform_key: str) -> None:
+    data = binary.read_bytes()[:4096]
+    if platform_key in MACHO_CPU:
+        assert data[:4] == b"\xcf\xfa\xed\xfe", "not a 64-bit Mach-O executable"
+        actual, expected = int.from_bytes(data[4:8], "little"), MACHO_CPU[platform_key]
+    elif platform_key in ELF_MACHINE:
+        assert data[:4] == b"\x7fELF", "not an ELF executable"
+        actual, expected = int.from_bytes(data[18:20], "little"), ELF_MACHINE[platform_key]
+    else:
+        pe = int.from_bytes(data[0x3C:0x40], "little")
+        assert data[:2] == b"MZ" and data[pe:pe + 4] == b"PE\0\0", "not a PE executable"
+        actual, expected = int.from_bytes(data[pe + 4:pe + 6], "little"), PE_MACHINE[platform_key]
+    if actual != expected:
+        sys.exit(f"{binary.name}: CPU type {actual:#x}, expected {expected:#x} for {platform_key}")
 
 
 def build(platform_key: str) -> Path:
@@ -80,6 +103,7 @@ def build(platform_key: str) -> Path:
             check=True,
         )
         binary = tmp / "dist" / Path(entrypoint).name
+        check_binary_arch(binary, platform_key)
         archive_manifest = {
             "name": profile["executable_name"],
             "version": version,
@@ -182,10 +206,17 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--write-manifest", action="store_true",
                     help="regenerate executas/ai-news-reporter/manifest.json and exit")
-    if ap.parse_args().write_manifest:
+    ap.add_argument("--platform", choices=sorted(MACHO_CPU | ELF_MACHINE | PE_MACHINE),
+                    help="platform the build must produce; refuses to build if the running "
+                         "interpreter is for a different one (default: the interpreter's)")
+    args = ap.parse_args()
+    if args.write_manifest:
         write_manifest()
         return
-    smoke_test(build(host_platform()))
+    target = host_platform()
+    if args.platform and args.platform != target:
+        sys.exit(f"interpreter builds {target}, not the requested {args.platform}")
+    smoke_test(build(target))
 
 
 if __name__ == "__main__":
