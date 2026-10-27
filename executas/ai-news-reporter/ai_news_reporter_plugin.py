@@ -20,7 +20,7 @@ import urllib.request
 import uuid
 from difflib import SequenceMatcher
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 TAVILY_URL = "https://api.tavily.com/search"
 DEFAULT_KEYWORDS = [
     "artificial intelligence",
@@ -343,6 +343,10 @@ def handle(req: dict) -> dict:
 
 
 def main() -> None:
+    # The protocol is UTF-8 with "\n" framing; Windows defaults to a locale code page
+    # (cannot encode Japanese reports) and "\r\n" line endings.
+    sys.stdin.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
     threading.Thread(target=_reader, daemon=True).start()
     while True:
         req = _agent_requests.get()

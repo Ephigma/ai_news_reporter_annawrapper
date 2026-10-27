@@ -12,7 +12,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PLUGIN = os.path.join(ROOT, "src", "anna_ai_news_reporter", "plugin.py")
+PLUGIN = os.path.join(ROOT, "executas", "ai-news-reporter", "ai_news_reporter_plugin.py")
 SECRET = "tvly-test-SECRET-123"
 
 
@@ -48,7 +48,8 @@ def main():
         f'TAVILY_URL = "http://127.0.0.1:{srv.server_port}/search"')
     env = {k: v for k, v in os.environ.items() if k != "TAVILY_API_KEY"}
     p = subprocess.Popen([sys.executable, "-I", "-c", code], stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                         encoding="utf-8", env=env)
 
     def call(obj):
         p.stdin.write(json.dumps(obj) + "\n")
@@ -104,10 +105,12 @@ def main():
 
     call({"jsonrpc": "2.0", "id": s["id"],
           "result": {"role": "assistant",
-                     "content": {"type": "text", "text": "## Executive Summary\nok"}}})
+                     "content": {"type": "text", "text": "## Executive Summary\n今週のAIニュース"}}})
     r = read()
     assert r["id"] == 4 and r["result"]["success"], r
     assert r["result"]["data"]["report_markdown"].startswith("## Executive Summary")
+    # Non-ASCII must survive the stdout encoding on every platform (Windows: cp1252 default)
+    assert r["result"]["data"]["report_markdown"].endswith("今週のAIニュース"), r
 
     # sampling error -> graceful failure
     call({"jsonrpc": "2.0", "id": 6, "method": "invoke",

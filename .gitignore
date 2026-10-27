@@ -1,0 +1,10 @@
+# Build outputs (archives are uploaded by `anna-app apps publish`, never committed)
+dist/
+build/
+*.egg-info/
+__pycache__/
+.venv/
+
+# Anna CLI identity cache and generated tool-id mapping
+.anna/
+anna-tool-ids.js

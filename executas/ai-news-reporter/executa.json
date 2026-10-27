@@ -1,0 +1,29 @@
+{
+  "slug": "ai-news-reporter",
+  "name": "AI News Reporter",
+  "version": "0.2.0",
+  "executa_type": "tool",
+  "description": "Collects the latest AI news via Tavily, removes duplicates, and writes a summarized news report.",
+  "tool_id": "tool-dev-ai-news-reporter",
+  "type": "python",
+  "distribution": {
+    "active": "binary",
+    "profiles": {
+      "local": {
+        "type": "local",
+        "supports_protocol": true
+      },
+      "binary": {
+        "type": "binary",
+        "executable_name": "ai-news-reporter",
+        "supports_protocol": true,
+        "binary_artifacts": {
+          "darwin-arm64": { "path": "dist/ai-news-reporter-{version}-darwin-arm64.tar.gz", "entrypoint": "bin/ai-news-reporter", "format": "tar.gz" },
+          "darwin-x86_64": { "path": "dist/ai-news-reporter-{version}-darwin-x86_64.tar.gz", "entrypoint": "bin/ai-news-reporter", "format": "tar.gz" },
+          "linux-x86_64": { "path": "dist/ai-news-reporter-{version}-linux-x86_64.tar.gz", "entrypoint": "bin/ai-news-reporter", "format": "tar.gz" },
+          "windows-x86_64": { "path": "dist/ai-news-reporter-{version}-windows-x86_64.zip", "entrypoint": "bin/ai-news-reporter.exe", "format": "zip" }
+        }
+      }
+    }
+  }
+}

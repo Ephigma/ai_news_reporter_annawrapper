@@ -1,0 +1,27 @@
+[project]
+name = "tool-dev-ai-news-reporter"
+version = "0.2.0"
+description = "Anna Executa plugin for AI News Reporter (Tavily search + host LLM summaries)"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Ephigma/ai_news_reporter"
+
+# `anna-app dev` launches the local profile as `uv run --project <dir> <tool_id>`,
+# so the script key must equal executa.json's tool_id.
+[project.scripts]
+"tool-dev-ai-news-reporter" = "ai_news_reporter_plugin:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["ai_news_reporter_plugin"]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.22.3",
+]

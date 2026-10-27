@@ -1,0 +1,81 @@
+# Builds the bundled Executa as a standalone binary for the four platforms Anna
+# installs on, packages each as the archive executa.json's binary_artifacts
+# expects, and smoke-tests the binary extracted from that archive on its own OS.
+#
+# Download the archives into executas/ai-news-reporter/dist/ before running
+# `anna-app apps publish`:
+#   gh run download <run-id> --pattern 'ai-news-reporter-*' --dir executas/ai-news-reporter/dist
+# A pushed tag v<version> also attaches them to a GitHub Release.
+name: Build Executa binaries
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: darwin-arm64, os: macos-14, arch: arm64, python: "uv run --project executas/ai-news-reporter python" }
+          # Intel macOS runners are being retired, so x86_64 is built on Apple Silicon.
+          # setup-python's "x64" Python there is a universal2 framework build that runs
+          # natively as arm64; `arch -x86_64` forces its x86_64 slice under Rosetta 2.
+          - { platform: darwin-x86_64, os: macos-15, arch: x64, python: "arch -x86_64 executas/ai-news-reporter/.venv/bin/python" }
+          # The oldest available Ubuntu: a PyInstaller binary needs a glibc at least
+          # as new as the build host's, and the Cloud Agent's glibc is not published.
+          - { platform: linux-x86_64, os: ubuntu-22.04, arch: x64, python: "uv run --project executas/ai-news-reporter python" }
+          - { platform: windows-x86_64, os: windows-latest, arch: x64, python: "uv run --project executas/ai-news-reporter python" }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: py
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: ${{ matrix.arch }}
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Sync build environment
+        env:
+          UV_PYTHON: ${{ steps.py.outputs.python-path }}
+        run: uv sync --project executas/ai-news-reporter
+
+      - name: Tests
+        env:
+          UV_PYTHON: ${{ steps.py.outputs.python-path }}
+          PY: ${{ matrix.python }}
+        run: |
+          $PY tests/test_config.py
+          $PY tests/test_plugin.py
+
+      # --platform makes the build refuse to run, and the binary's CPU type is checked,
+      # if the interpreter would produce a different platform than this job is for.
+      - name: Build, package and smoke-test
+        env:
+          UV_PYTHON: ${{ steps.py.outputs.python-path }}
+          PY: ${{ matrix.python }}
+          PLATFORM: ${{ matrix.platform }}
+        run: $PY scripts/build_binary.py --platform "$PLATFORM"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-news-reporter-${{ matrix.platform }}
+          path: executas/ai-news-reporter/dist/*
+          if-no-files-found: error
+
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: executas/ai-news-reporter/dist/*

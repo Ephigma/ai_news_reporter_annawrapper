@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "required_executas": [
+    { "tool_id": "bundled:ai-news-reporter", "min_version": "0.2.0", "version": "latest" }
+  ],
+  "optional_executas": [],
+  "host_capabilities": ["llm.sample"],
+  "system_prompt_addendum": "The user has the AI News Reporter app. For a news report or summary of recent AI news, call the ai_news_report tool and show its report_markdown to the user as-is. For a plain list of articles, call search_ai_news. Pass the user's topics as comma-separated keywords, the period as time_range (day, week or month), and the language the user asks for as language. If a tool says TAVILY_API_KEY is not configured, tell the user to add their Tavily API key in the AI News Reporter tool settings.",
+  "tags": ["news", "ai", "report", "summary"]
+}

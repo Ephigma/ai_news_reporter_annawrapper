@@ -1,0 +1,12 @@
+{
+  "slug": "ai-news-reporter",
+  "name": "AI News Reporter",
+  "version": "0.2.0",
+  "tagline": "Collect the latest AI news and get a summarized report.",
+  "description": "AI News Reporter searches recent AI news with Tavily, removes duplicate stories, and writes a markdown report with an executive summary, highlights and source links.\n\n**What's inside**\n\n- `ai-news-reporter` — a bundled Tool Executa with two tools: `search_ai_news` (deduplicated article list, no LLM) and `ai_news_report` (the same list summarized into a report by Anna's LLM through sampling).\n\n**How to use**\n\nAdd your own Tavily API key (free at https://tavily.com) in the tool's credentials, then mention the app and ask, for example, \"this week's AI news report in Japanese\".",
+  "category": "productivity",
+  "pricing_model": "free",
+  "bundled_executas": {
+    "ai-news-reporter": { "path": "./executas/ai-news-reporter" }
+  }
+}
