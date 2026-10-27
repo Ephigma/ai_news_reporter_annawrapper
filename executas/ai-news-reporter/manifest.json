@@ -1,0 +1,84 @@
+{
+  "name": "ai-news-reporter",
+  "display_name": "AI News Reporter",
+  "version": "0.2.0",
+  "description": "Collects the latest AI news via Tavily, removes duplicates, and writes a summarized news report.",
+  "author": "Ephigma",
+  "homepage": "https://github.com/Ephigma/ai_news_reporter",
+  "host_capabilities": [
+    "llm.sample"
+  ],
+  "credentials": [
+    {
+      "name": "TAVILY_API_KEY",
+      "display_name": "Tavily API Key",
+      "description": "News search key. Get one free at https://tavily.com",
+      "required": true,
+      "sensitive": true
+    }
+  ],
+  "tools": [
+    {
+      "name": "search_ai_news",
+      "description": "Search recent AI news and return a deduplicated list of articles (title, url, source snippet, date). No LLM is used.",
+      "parameters": [
+        {
+          "name": "keywords",
+          "type": "string",
+          "required": false,
+          "description": "Comma-separated search topics. Default: general AI topics."
+        },
+        {
+          "name": "time_range",
+          "type": "string",
+          "required": false,
+          "description": "day, week or month. Default: week."
+        },
+        {
+          "name": "max_results_per_keyword",
+          "type": "integer",
+          "required": false,
+          "description": "1-20. Default: 8."
+        }
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "ai_news_report",
+      "description": "Collect recent AI news, remove duplicates and write a markdown news report with an executive summary and highlights.",
+      "parameters": [
+        {
+          "name": "keywords",
+          "type": "string",
+          "required": false,
+          "description": "Comma-separated search topics. Default: general AI topics."
+        },
+        {
+          "name": "time_range",
+          "type": "string",
+          "required": false,
+          "description": "day, week or month. Default: week."
+        },
+        {
+          "name": "max_results_per_keyword",
+          "type": "integer",
+          "required": false,
+          "description": "1-20. Default: 8."
+        },
+        {
+          "name": "language",
+          "type": "string",
+          "required": false,
+          "description": "Report language, e.g. English or Japanese. Default: English."
+        },
+        {
+          "name": "focus",
+          "type": "string",
+          "required": false,
+          "description": "Optional focus, e.g. 'enterprise adoption' or 'open models'."
+        }
+      ],
+      "timeout": 300
+    }
+  ]
+}
